@@ -1,0 +1,376 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BubbleLink</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;
+ background:#f5f5f7;
+ color:#17181b;
+ font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+}
+header{
+ padding:22px;
+ text-align:center;
+ font-size:23px;
+ font-weight:700;
+}
+header span{color:#087eff}
+main{max-width:850px;margin:30px auto;padding:20px}
+.card{
+ background:white;
+ padding:25px;
+ border-radius:20px;
+ border:1px solid #e5e5e9;
+ margin-bottom:20px;
+}
+h1{text-align:center;letter-spacing:-1px}
+h2{font-size:18px}
+label{
+ display:block;
+ font-size:13px;
+ font-weight:600;
+ margin:16px 0 8px;
+}
+input,textarea,select{
+ width:100%;
+ padding:12px;
+ border:1px solid #ddd;
+ border-radius:10px;
+ font:inherit;
+}
+textarea{resize:vertical;min-height:75px}
+button{
+ border:0;
+ padding:13px 18px;
+ border-radius:11px;
+ font-weight:600;
+ cursor:pointer;
+}
+.primary{background:#087eff;color:white;width:100%;margin-top:20px}
+.secondary{background:#eaf2ff;color:#087eff}
+.preview{
+ background:#edf1f6;
+ border-radius:15px;
+ padding:25px;
+ min-height:200px;
+ display:flex;
+ flex-direction:column;
+ justify-content:center;
+}
+.chat{display:flex;justify-content:flex-end}
+.bubble{
+ background:#087eff;
+ color:white;
+ padding:12px 15px;
+ border-radius:19px 19px 5px 19px;
+ max-width:85%;
+ overflow-wrap:anywhere;
+ font-size:15px;
+ line-height:1.4;
+}
+.bubble img{
+ display:none;
+ width:100%;
+ max-width:280px;
+ max-height:240px;
+ object-fit:cover;
+ border-radius:12px;
+ margin-bottom:7px;
+}
+.timestamp{
+ text-align:right;
+ color:#89909a;
+ font-size:11px;
+ margin:7px 3px;
+}
+#result{display:none;margin-top:20px}
+.row{display:flex;gap:12px}
+.row>*{flex:1;min-width:0}
+.notice{font-size:12px;color:#777;line-height:1.5}
+</style>
+</head>
+<body>
+
+<header>Bubble<span>Link</span></header>
+
+<main>
+<h1>A link with a little personality.</h1>
+
+<div class="card">
+<h2>Create your redirect</h2>
+
+<label>Destination URL</label>
+<input id="destination" type="url" placeholder="https://example.com">
+
+<label>Bubble message</label>
+<textarea id="message">Hey! Check this out.</textarea>
+
+<label>Add a photo</label>
+<input id="photo" type="file" accept="image/*">
+
+<div class="row">
+<div>
+<label>Bubble color</label>
+<input id="color" type="color" value="#087eff">
+</div>
+<div>
+<label>Redirect delay</label>
+<select id="delay">
+<option value="0">Immediately</option>
+<option value="2">2 seconds</option>
+<option value="3" selected>3 seconds</option>
+<option value="5">5 seconds</option>
+<option value="8">8 seconds</option>
+</select>
+</div>
+</div>
+
+<label>Chat label</label>
+<input id="sender" value="iMessage">
+
+<label>Timestamp</label>
+<select id="timestamp">
+<option>now</option>
+<option>Delivered</option>
+<option>Today</option>
+<option>Just now</option>
+</select>
+
+<button class="primary" onclick="generateLink()">Generate redirect link</button>
+
+<p id="error" class="notice" style="color:red"></p>
+
+<div id="result">
+<label>Your generated link</label>
+<div class="row">
+<input id="generated" readonly>
+<button class="secondary" onclick="copyLink()">Copy</button>
+</div>
+<p class="notice">Your link is ready to share.</p>
+</div>
+</div>
+
+<div class="card">
+<h2>Live preview</h2>
+
+<div class="preview">
+<div id="previewLabel" style="text-align:center;color:#777;font-size:12px;margin-bottom:20px">iMessage</div>
+
+<div class="chat">
+<div class="bubble" id="previewBubble">
+<img id="previewImage">
+<span id="previewText">Hey! Check this out.</span>
+</div>
+</div>
+
+<div class="timestamp" id="previewTimestamp">now</div>
+</div>
+</div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+let photoData = "";
+
+function updatePreview(){
+ $("previewText").textContent =
+ $("message").value || "Your message";
+
+ $("previewBubble").style.background = $("color").value;
+
+ $("previewLabel").textContent =
+ $("sender").value || "iMessage";
+
+ $("previewTimestamp").textContent =
+ $("timestamp").value;
+}
+
+["message","color","sender","timestamp"].forEach(id=>{
+ $(id).addEventListener("input",updatePreview);
+});
+
+function compressImage(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+
+  reader.onerror=reject;
+
+  reader.onload=()=>{
+   const image=new Image();
+
+   image.onerror=reject;
+
+   image.onload=()=>{
+    const scale=Math.min(
+     1,
+     700/Math.max(image.width,image.height)
+    );
+
+    const canvas=document.createElement("canvas");
+
+    canvas.width=Math.round(image.width*scale);
+    canvas.height=Math.round(image.height*scale);
+
+    canvas.getContext("2d").drawImage(
+     image,0,0,canvas.width,canvas.height
+    );
+
+    resolve(canvas.toDataURL("image/jpeg",0.72));
+   };
+
+   image.src=reader.result;
+  };
+
+  reader.readAsDataURL(file);
+ });
+}
+
+$("photo").addEventListener("change",async event=>{
+ const file=event.target.files[0];
+
+ if(!file)return;
+
+ if(!file.type.startsWith("image/"))return;
+
+ try{
+  photoData=await compressImage(file);
+
+  $("previewImage").src=photoData;
+  $("previewImage").style.display="block";
+ }catch{
+  $("error").textContent="Could not load this photo.";
+ }
+});
+
+function generateLink(){
+ const destination=$("destination").value.trim();
+
+ try{
+  const target=new URL(destination);
+
+  if(!["http:","https:"].includes(target.protocol)){
+   throw new Error();
+  }
+ }catch{
+  $("error").textContent="Enter a valid website URL.";
+  return;
+ }
+
+ $("error").textContent="";
+
+ const url=new URL(location.href);
+
+ url.search="";
+
+ url.searchParams.set("to",destination);
+ url.searchParams.set("msg",$("message").value);
+ url.searchParams.set("color",$("color").value);
+ url.searchParams.set("delay",$("delay").value);
+ url.searchParams.set("label",$("sender").value);
+ url.searchParams.set("time",$("timestamp").value);
+
+ if(photoData){
+  url.searchParams.set("img",photoData);
+ }
+
+ $("generated").value=url.toString();
+
+ $("result").style.display="block";
+}
+
+async function copyLink(){
+ try{
+  await navigator.clipboard.writeText($("generated").value);
+  $("generated").select();
+ }catch{
+  $("generated").select();
+  document.execCommand("copy");
+ }
+}
+
+function showRedirect(){
+ const params=new URLSearchParams(location.search);
+
+ if(!params.has("to"))return;
+
+ const destination=params.get("to");
+
+ try{
+  const target=new URL(destination);
+
+  if(!["http:","https:"].includes(target.protocol)){
+   throw new Error();
+  }
+ }catch{
+  document.body.innerHTML="<h2>Invalid redirect link</h2>";
+  return;
+ }
+
+ const message=params.get("msg")||"Hello!";
+ const color=params.get("color")||"#087eff";
+ const delay=Math.max(0,Math.min(30,Number(params.get("delay")||3)));
+ const label=params.get("label")||"iMessage";
+ const time=params.get("time")||"now";
+ const image=params.get("img")||"";
+
+ document.querySelector("main").innerHTML=`
+ <div class="card" style="max-width:540px;margin:12vh auto;text-align:center">
+  <div class="preview">
+   <div id="visitorLabel" style="color:#777;margin-bottom:20px"></div>
+   <div class="chat">
+    <div class="bubble" id="visitorBubble">
+     <img id="visitorImage">
+     <span id="visitorText"></span>
+    </div>
+   </div>
+   <div class="timestamp" id="visitorTime"></div>
+  </div>
+  <h2>Opening your link...</h2>
+  <p id="countdown" class="notice"></p>
+ </div>`;
+
+ $("visitorLabel").textContent=label;
+ $("visitorText").textContent=message;
+ $("visitorBubble").style.background=
+  /^#[0-9a-fA-F]{6}$/.test(color)?color:"#087eff";
+ $("visitorTime").textContent=time;
+
+ if(image.startsWith("data:image/")){
+  $("visitorImage").src=image;
+  $("visitorImage").style.display="block";
+ }
+
+ if(delay===0){
+  location.replace(target.href);
+ }else{
+  let remaining=delay;
+
+  $("countdown").textContent=
+   `Redirecting in ${remaining} seconds...`;
+
+  const timer=setInterval(()=>{
+   remaining--;
+
+   if(remaining<=0){
+    clearInterval(timer);
+    location.replace(target.href);
+   }else{
+    $("countdown").textContent=
+     `Redirecting in ${remaining} seconds...`;
+   }
+  },1000);
+ }
+}
+
+updatePreview();
+showRedirect();
+</script>
+
+</body>
+</html>
