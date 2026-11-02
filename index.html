@@ -1,0 +1,572 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BubbleLink</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 25px 16px 50px;
+    background: #f5f5f7;
+    color: #1c1c1e;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+}
+
+.container {
+    max-width: 480px;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+    font-size: 32px;
+    letter-spacing: -1.5px;
+    margin: 12px 0 5px;
+}
+
+.subtitle {
+    text-align: center;
+    color: #888;
+    margin-bottom: 28px;
+    font-size: 14px;
+}
+
+.card {
+    background: white;
+    border-radius: 18px;
+    padding: 20px;
+    margin-bottom: 18px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.045);
+}
+
+h2 {
+    font-size: 17px;
+    margin: 0 0 16px;
+}
+
+label {
+    display: block;
+    font-size: 13px;
+    color: #555;
+    margin: 14px 0 7px;
+}
+
+input, textarea, select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    background: white;
+    font: inherit;
+    font-size: 14px;
+    outline: none;
+}
+
+input:focus, textarea:focus, select:focus {
+    border-color: #1684ff;
+}
+
+textarea {
+    resize: vertical;
+    min-height: 75px;
+}
+
+.color-options {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.color-choice {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 3px solid white;
+    outline: 1px solid #ccc;
+    cursor: pointer;
+}
+
+.color-choice.selected {
+    outline: 2px solid #1684ff;
+}
+
+.preview {
+    background: #e9e9eb;
+    border-radius: 16px;
+    padding: 18px 14px;
+    min-height: 150px;
+}
+
+.chat-header {
+    text-align: center;
+    color: #777;
+    font-size: 12px;
+    margin-bottom: 18px;
+}
+
+.message-row {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.bubble {
+    background: #1684ff;
+    color: white;
+    padding: 11px 15px;
+    border-radius: 19px 19px 5px 19px;
+    max-width: 85%;
+    font-size: 15px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+}
+
+.bubble-photo {
+    display: block;
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 13px;
+    margin-bottom: 7px;
+    object-fit: cover;
+}
+
+.preview-time {
+    text-align: right;
+    font-size: 11px;
+    color: #777;
+    margin-top: 7px;
+}
+
+button {
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    width: 100%;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.primary {
+    background: #1684ff;
+    color: white;
+}
+
+.secondary {
+    background: #ededf0;
+    color: #222;
+    margin-top: 10px;
+}
+
+button:active {
+    opacity: .75;
+}
+
+.result {
+    display: none;
+    margin-top: 15px;
+}
+
+.result input {
+    margin-bottom: 10px;
+}
+
+.note {
+    color: #888;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 12px;
+}
+
+.error {
+    color: #d93025;
+    font-size: 13px;
+    margin-top: 10px;
+}
+
+.redirect-screen {
+    max-width: 400px;
+    margin: 70px auto;
+    text-align: center;
+}
+
+.redirect-screen .preview {
+    text-align: left;
+    margin: 25px 0;
+}
+
+.redirect-title {
+    font-size: 23px;
+    font-weight: 650;
+    letter-spacing: -.5px;
+}
+
+.redirect-subtitle {
+    color: #888;
+    font-size: 14px;
+    margin-top: 8px;
+}
+
+.spinner {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #ddd;
+    border-top-color: #1684ff;
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+    margin: 20px auto;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+[hidden] {
+    display: none !important;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container" id="builder">
+
+    <h1>BubbleLink</h1>
+    <div class="subtitle">Create a message. Share a link.</div>
+
+    <div class="card">
+        <h2>Destination</h2>
+
+        <label for="destination">Website URL</label>
+        <input id="destination" type="url" placeholder="https://example.com">
+
+        <label for="delay">Redirect after</label>
+        <select id="delay">
+            <option value="0">Immediately</option>
+            <option value="2">2 seconds</option>
+            <option value="3" selected>3 seconds</option>
+            <option value="5">5 seconds</option>
+            <option value="8">8 seconds</option>
+            <option value="10">10 seconds</option>
+            <option value="15">15 seconds</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <h2>Customize your message</h2>
+
+        <label for="chatLabel">Chat name</label>
+        <input id="chatLabel" type="text" value="iMessage">
+
+        <label for="message">Message</label>
+        <textarea id="message" placeholder="Type your message...">Hey! Check this out.</textarea>
+
+        <label for="timestamp">Timestamp</label>
+        <input id="timestamp" type="text" value="Now">
+
+        <label>Bubble color</label>
+        <div class="color-options">
+            <div class="color-choice selected" data-color="#1684ff" style="background:#1684ff"></div>
+            <div class="color-choice" data-color="#34c759" style="background:#34c759"></div>
+            <div class="color-choice" data-color="#8e8e93" style="background:#8e8e93"></div>
+            <div class="color-choice" data-color="#ff9500" style="background:#ff9500"></div>
+            <div class="color-choice" data-color="#af52de" style="background:#af52de"></div>
+            <div class="color-choice" data-color="#ff2d55" style="background:#ff2d55"></div>
+        </div>
+
+        <label for="photo">Attach a photo (optional)</label>
+        <input id="photo" type="file" accept="image/*">
+
+        <p class="note">Photos are compressed before being added to your generated link. Very large links may not work in every messaging app.</p>
+    </div>
+
+    <div class="card">
+        <h2>Preview</h2>
+
+        <div class="preview">
+            <div class="chat-header" id="previewLabel">iMessage</div>
+
+            <div class="message-row">
+                <div class="bubble" id="previewBubble">
+                    <img class="bubble-photo" id="previewPhoto" hidden alt="">
+                    <span id="previewMessage">Hey! Check this out.</span>
+                </div>
+            </div>
+
+            <div class="preview-time" id="previewTime">Now</div>
+        </div>
+    </div>
+
+    <button class="primary" id="generateButton">Generate BubbleLink</button>
+
+    <div class="card result" id="result">
+        <h2>Your BubbleLink is ready</h2>
+        <input id="generatedLink" type="text" readonly>
+        <button class="primary" id="copyButton">Copy Link</button>
+        <p class="note" id="copyStatus"></p>
+    </div>
+
+    <div class="error" id="error" role="alert"></div>
+
+</div>
+
+
+<div class="redirect-screen" id="redirectScreen" hidden>
+
+    <div class="redirect-title" id="redirectTitle">Message sent</div>
+    <div class="redirect-subtitle">You'll be redirected shortly.</div>
+
+    <div class="preview">
+        <div class="chat-header" id="visitorLabel"></div>
+
+        <div class="message-row">
+            <div class="bubble" id="visitorBubble">
+                <img class="bubble-photo" id="visitorPhoto" hidden alt="">
+                <span id="visitorMessage"></span>
+            </div>
+        </div>
+
+        <div class="preview-time" id="visitorTime"></div>
+    </div>
+
+    <div class="spinner" id="spinner"></div>
+    <div class="redirect-subtitle" id="redirectStatus">Redirecting...</div>
+
+</div>
+
+
+<script>
+const $ = id => document.getElementById(id);
+
+let selectedColor = "#1684ff";
+let photoData = "";
+
+
+/* LIVE PREVIEW */
+
+function updatePreview() {
+    $("previewLabel").textContent = $("chatLabel").value || "iMessage";
+    $("previewMessage").textContent = $("message").value;
+    $("previewTime").textContent = $("timestamp").value;
+    $("previewBubble").style.background = selectedColor;
+}
+
+["chatLabel", "message", "timestamp"].forEach(id => {
+    $(id).addEventListener("input", updatePreview);
+});
+
+
+/* BUBBLE COLORS */
+
+document.querySelectorAll(".color-choice").forEach(choice => {
+    choice.addEventListener("click", () => {
+        document.querySelectorAll(".color-choice").forEach(item => {
+            item.classList.remove("selected");
+        });
+
+        choice.classList.add("selected");
+        selectedColor = choice.dataset.color;
+        updatePreview();
+    });
+});
+
+
+/* PHOTO UPLOAD */
+
+$("photo").addEventListener("change", () => {
+    const file = $("photo").files[0];
+
+    if (!file) {
+        photoData = "";
+        $("previewPhoto").hidden = true;
+        return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+        $("error").textContent = "Please choose an image file.";
+        $("photo").value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = event => {
+        const image = new Image();
+
+        image.onload = () => {
+            const canvas = document.createElement("canvas");
+
+            const maxSize = 480;
+            const scale = Math.min(
+                1,
+                maxSize / Math.max(image.width, image.height)
+            );
+
+            canvas.width = Math.round(image.width * scale);
+            canvas.height = Math.round(image.height * scale);
+
+            const context = canvas.getContext("2d");
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+
+            photoData = canvas.toDataURL("image/jpeg", 0.55);
+
+            $("previewPhoto").src = photoData;
+            $("previewPhoto").hidden = false;
+            $("error").textContent = "";
+        };
+
+        image.onerror = () => {
+            $("error").textContent = "That image could not be loaded.";
+        };
+
+        image.src = event.target.result;
+    };
+
+    reader.readAsDataURL(file);
+});
+
+
+/* GENERATE LINK */
+
+$("generateButton").addEventListener("click", () => {
+    $("error").textContent = "";
+    $("result").style.display = "none";
+
+    let destination;
+
+    try {
+        destination = new URL($("destination").value.trim());
+
+        if (!["http:", "https:"].includes(destination.protocol)) {
+            throw new Error("Invalid protocol");
+        }
+    } catch {
+        $("error").textContent = "Please enter a valid website URL beginning with https:// or http://.";
+        return;
+    }
+
+    const currentPage = new URL(window.location.href);
+
+    if (currentPage.protocol === "file:") {
+        $("error").textContent = "Upload BubbleLink to a website, such as GitHub Pages, before generating shareable links.";
+        return;
+    }
+
+    const params = new URLSearchParams();
+
+    params.set("to", destination.href);
+    params.set("message", $("message").value);
+    params.set("color", selectedColor);
+    params.set("label", $("chatLabel").value);
+    params.set("time", $("timestamp").value);
+    params.set("delay", $("delay").value);
+
+    if (photoData) {
+        params.set("img", photoData);
+    }
+
+    currentPage.search = params.toString();
+    currentPage.hash = "";
+
+    $("generatedLink").value = currentPage.href;
+    $("result").style.display = "block";
+
+    $("result").scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+    });
+});
+
+
+/* COPY LINK */
+
+$("copyButton").addEventListener("click", async () => {
+    const link = $("generatedLink").value;
+
+    try {
+        await navigator.clipboard.writeText(link);
+        $("copyStatus").textContent = "Link copied!";
+    } catch {
+        $("generatedLink").select();
+
+        const copied = document.execCommand("copy");
+
+        $("copyStatus").textContent = copied
+            ? "Link copied!"
+            : "Select and copy the link manually.";
+    }
+});
+
+
+/* REDIRECT PAGE */
+
+function showRedirect() {
+    const params = new URLSearchParams(window.location.search);
+    const destination = params.get("to");
+
+    let target;
+
+    try {
+        target = new URL(destination);
+
+        if (!["http:", "https:"].includes(target.protocol)) {
+            throw new Error("Invalid destination");
+        }
+    } catch {
+        $("builder").hidden = false;
+        $("error").textContent = "This BubbleLink has an invalid destination.";
+        return;
+    }
+
+    const message = params.get("message") || "";
+    const color = params.get("color") || "#1684ff";
+    const label = params.get("label") || "iMessage";
+    const time = params.get("time") || "Now";
+    const delay = Math.max(0, Math.min(30, Number(params.get("delay") ?? 3)));
+
+    const image = params.get("img");
+
+    $("builder").hidden = true;
+    $("redirectScreen").hidden = false;
+
+    $("visitorLabel").textContent = label;
+    $("visitorMessage").textContent = message;
+    $("visitorTime").textContent = time;
+    $("visitorBubble").style.background = color;
+
+    if (image && image.startsWith("data:image/")) {
+        $("visitorPhoto").src = image;
+        $("visitorPhoto").hidden = false;
+    }
+
+    if (delay === 0) {
+        $("redirectStatus").textContent = "Redirecting now...";
+    } else {
+        $("redirectStatus").textContent = "Redirecting in " + delay + " seconds...";
+    }
+
+    setTimeout(() => {
+        $("redirectStatus").textContent = "Opening website...";
+        window.location.replace(target.href);
+    }, delay * 1000);
+}
+
+
+/* STARTUP */
+
+updatePreview();
+
+if (window.location.search) {
+    showRedirect();
+}
+</script>
+
+</body>
+</html>
